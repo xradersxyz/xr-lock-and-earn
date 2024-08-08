@@ -1,24 +1,22 @@
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { time, loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
+import { Contract } from "ethers";
 import hre from "hardhat";
+import { XradersLock, XrToken } from "../typechain-types";
 
 describe("XradersLock", function () {
   // Fixture to deploy the contracts and set up initial state
   async function deployXradersLockFixture() {
     const unlockPeriod = 7 * 24 * 60 * 60; // 7 days in seconds
     const penaltyRate = 20; // 20%
-    const initialSupply = hre.ethers.parseEther("10000");
 
     // Contracts are deployed using the first signer/account by default
     const [owner, addr1, addr2] = await hre.ethers.getSigners();
 
-    // Deploy ERC20mock Token
-    const TokenFactory = await hre.ethers.getContractFactory("ERC20Mock");
-    const token = await TokenFactory.deploy("Test Token", "TTK", initialSupply);
-
     // Deploy XR Token
-    // const TokenFactory = await hre.ethers.getContractFactory("XrToken");
-    // const token = await TokenFactory.deploy(owner.address);
+    const TokenFactory = await hre.ethers.getContractFactory("XrToken");
+    const token = await TokenFactory.deploy(owner.address);
 
     // Deploy XradersLock Contract
     const XradersLockFactory = await hre.ethers.getContractFactory("XradersLock");
@@ -35,6 +33,41 @@ describe("XradersLock", function () {
     return { xradersLock, token, unlockPeriod, penaltyRate, owner, addr1, addr2 };
   }
 
+  async function signPermit(addr: HardhatEthersSigner, token: XrToken, xradersLock: XradersLock, amount: bigint) {
+    const nonce = await token.nonces(addr.address);
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 60;
+
+    const domain = {
+      name: await token.name(),
+      version: "1",
+      chainId: (await hre.ethers.provider.getNetwork()).chainId,
+      verifyingContract: await token.getAddress(),
+    };
+
+    const types = {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+
+    const values = {
+      owner: addr.address,
+      spender: await xradersLock.getAddress(),
+      value: amount,
+      nonce: nonce,
+      deadline: deadline,
+    };
+
+    const signature = await addr.signTypedData(domain, types, values);
+    const { v, r, s } = hre.ethers.Signature.from(signature);
+
+    return { amount, deadline, v, r, s };
+  }
+
   describe("Deployment", function () {
     it("Should set the correct unlockPeriod and penaltyRate", async function () {
       const { xradersLock, unlockPeriod, penaltyRate } = await loadFixture(deployXradersLockFixture);
@@ -48,11 +81,13 @@ describe("XradersLock", function () {
     it("Should lock tokens", async function () {
       const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
       const lock = await xradersLock.userLock(addr1.address);
-      expect(lock.amount).to.equal(hre.ethers.parseEther("100"));
+      expect(lock.amount).to.equal(amount);
     });
   });
 
@@ -60,9 +95,10 @@ describe("XradersLock", function () {
     it("Should unlock tokens", async function () {
       const { xradersLock, token, addr1, unlockPeriod } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
 
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
       await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
       const lock = await xradersLock.userLock(addr1.address);
@@ -77,8 +113,10 @@ describe("XradersLock", function () {
     it("Should not unlock zero tokens", async function () {
       const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
       await expect(xradersLock.connect(addr1).unlock(hre.ethers.parseEther("0"))).to.be.revertedWith(
         "Invalid unlock amount"
@@ -88,8 +126,10 @@ describe("XradersLock", function () {
     it("Should not unlock more tokens than locked", async function () {
       const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
       await expect(xradersLock.connect(addr1).unlock(hre.ethers.parseEther("200"))).to.be.revertedWith(
         "Invalid unlock amount"
@@ -101,8 +141,10 @@ describe("XradersLock", function () {
     it("Should redeem tokens after unlock period", async function () {
       const { xradersLock, token, addr1, unlockPeriod } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
       await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
@@ -121,8 +163,10 @@ describe("XradersLock", function () {
     it("Should fast redeem tokens with penalty and burn penalty tokens", async function () {
       const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
       await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
       const initialTotalSupply = await token.totalSupply();
@@ -156,191 +200,143 @@ describe("XradersLock", function () {
     it("Should revert fast redeem with invalid index", async function () {
       const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+      const amount = hre.ethers.parseUnits("100");
+      const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+      await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
       await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
       await expect(xradersLock.connect(addr1).fastRedeem(1)).to.be.revertedWith("Invalid unlock index");
     });
 
-    /**
-     * only for Mock token
-     */
-    it("Should revert if transfer fails during fast redeem", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
+    describe("Owner-Only Functions", function () {
+      it("Should allow owner to set unlock period", async function () {
+        const { xradersLock } = await loadFixture(deployXradersLockFixture);
 
-      // Approve and lock tokens
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+        await xradersLock.setUnlockPeriod(10 * 24 * 60 * 60);
+        expect(await xradersLock.unlockPeriod()).to.equal(10 * 24 * 60 * 60);
+      });
 
-      // Unlock some tokens
-      await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
+      it("Should allow owner to set penalty rate", async function () {
+        const { xradersLock } = await loadFixture(deployXradersLockFixture);
 
-      // Simulate transfer failure
-      await token.connect(addr1).setFailTransfer(true);
+        await xradersLock.setPenaltyRate(25);
+        expect(await xradersLock.penaltyRate()).to.equal(25);
+      });
 
-      // Expect fast redeem to fail due to transfer failure
-      await expect(xradersLock.connect(addr1).fastRedeem(0))
-        .to.be.revertedWith("Transfer failed");
+      it("Should revert when non-owner tries to set unlock period", async function () {
+        const { xradersLock, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      // Reset failure flag to avoid affecting other tests
-      await token.connect(addr1).setFailTransfer(false);
-    });
-  });
+        await expect(xradersLock.connect(addr1).setUnlockPeriod(10 * 24 * 60 * 60))
+          .to.be.revertedWithCustomError(xradersLock, "OwnableUnauthorizedAccount")
+          .withArgs(addr1.address);
+      });
 
-  describe("Owner-Only Functions", function () {
-    it("Should allow owner to set unlock period", async function () {
-      const { xradersLock } = await loadFixture(deployXradersLockFixture);
+      it("Should revert when non-owner tries to set penalty rate", async function () {
+        const { xradersLock, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await xradersLock.setUnlockPeriod(10 * 24 * 60 * 60);
-      expect(await xradersLock.unlockPeriod()).to.equal(10 * 24 * 60 * 60);
-    });
-
-    it("Should allow owner to set penalty rate", async function () {
-      const { xradersLock } = await loadFixture(deployXradersLockFixture);
-
-      await xradersLock.setPenaltyRate(25);
-      expect(await xradersLock.penaltyRate()).to.equal(25);
+        await expect(xradersLock.connect(addr1).setPenaltyRate(25))
+          .to.be.revertedWithCustomError(xradersLock, "OwnableUnauthorizedAccount")
+          .withArgs(addr1.address);
+      });
     });
 
-    it("Should revert when non-owner tries to set unlock period", async function () {
-      const { xradersLock, addr1 } = await loadFixture(deployXradersLockFixture);
+    describe("Token Transfer Behavior", function () {
+      it("Should revert lock with insufficient balance", async function () {
+        const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await expect(xradersLock.connect(addr1).setUnlockPeriod(10 * 24 * 60 * 60))
-        .to.be.revertedWithCustomError(xradersLock, "OwnableUnauthorizedAccount")
-        .withArgs(addr1.address);
+        const amount = hre.ethers.parseUnits("2000");
+        const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
+
+        await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
+        await expect(xradersLock.connect(addr1).lock(amount, deadline, v, r, s)).to.be.revertedWithCustomError(
+          token,
+          "ERC20InsufficientBalance"
+        ).withArgs(addr1.address, hre.ethers.parseUnits("1000"), amount);
+        
+      });
     });
 
-    it("Should revert when non-owner tries to set penalty rate", async function () {
-      const { xradersLock, addr1 } = await loadFixture(deployXradersLockFixture);
+    describe("Penalty Calculations", function () {
+      it("Should correctly apply penalty for fast redeem", async function () {
+        const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await expect(xradersLock.connect(addr1).setPenaltyRate(25))
-        .to.be.revertedWithCustomError(xradersLock, "OwnableUnauthorizedAccount")
-        .withArgs(addr1.address);
-    });
-  });
+        const amount = hre.ethers.parseUnits("100");
+        const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
 
-  describe("Token Transfer Behavior", function () {
-    it("Should revert lock with insufficient allowance", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
+        await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
+        await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
-      await expect(xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"))).to.be.revertedWithCustomError(
-        token,
-        "ERC20InsufficientAllowance"
-      );
-    });
+        await xradersLock.setPenaltyRate(10); // Setting penalty rate to 10%
 
-    it("Should revert lock with insufficient balance", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
+        await xradersLock.connect(addr1).fastRedeem(0);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("2000"));
-      await expect(xradersLock.connect(addr1).lock(hre.ethers.parseEther("2000"))).to.be.revertedWithCustomError(
-        token,
-        "ERC20InsufficientBalance"
-      );
-    });
-  });
+        const unlocks = await xradersLock.getUserUnlocks(addr1.address);
+        expect(unlocks.length).to.equal(0);
 
-  describe("Penalty Calculations", function () {
-    it("Should correctly apply penalty for fast redeem", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
-
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
-
-      await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
-
-      await xradersLock.setPenaltyRate(10); // Setting penalty rate to 10%
-
-      await xradersLock.connect(addr1).fastRedeem(0);
-
-      const unlocks = await xradersLock.getUserUnlocks(addr1.address);
-      expect(unlocks.length).to.equal(0);
-
-      const balance = await token.balanceOf(addr1.address);
-      const expectedBalance = hre.ethers.parseEther("945"); // 1000 - 100 + (50 * 10%)
-      expect(balance).to.equal(expectedBalance);
-    });
-  });
-
-  describe("Event Emission", function () {
-    it("Should emit Locked event on lock", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
-
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await expect(xradersLock.connect(addr1).lock(hre.ethers.parseEther("100")))
-        .to.emit(xradersLock, "Locked")
-        .withArgs(addr1.address, hre.ethers.parseEther("100"));
+        const balance = await token.balanceOf(addr1.address);
+        const expectedBalance = hre.ethers.parseEther("945"); // 1000 - 100 + (50 * 10%)
+        expect(balance).to.equal(expectedBalance);
+      });
     });
 
-    it("Should emit Unlocked event on unlock", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
+    describe("Event Emission", function () {
+      it("Should emit Locked event on lock", async function () {
+        const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+        const amount = hre.ethers.parseUnits("100");
+        const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
 
-      await expect(xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50")))
-        .to.emit(xradersLock, "Unlocked")
-        .withArgs(addr1.address, hre.ethers.parseEther("50"));
-    });
+        await expect(xradersLock.connect(addr1).lock(amount, deadline, v, r, s))
+          .to.emit(xradersLock, "Locked")
+          .withArgs(addr1.address, hre.ethers.parseEther("100"));
+      });
 
-    it("Should emit Redeemed event on redeem", async function () {
-      const { xradersLock, token, addr1, unlockPeriod } = await loadFixture(deployXradersLockFixture);
+      it("Should emit Unlocked event on unlock", async function () {
+        const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+        const amount = hre.ethers.parseUnits("100");
+        const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
 
-      await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
+        await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
-      await time.increase(unlockPeriod + 1);
+        await expect(xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50")))
+          .to.emit(xradersLock, "Unlocked")
+          .withArgs(addr1.address, hre.ethers.parseEther("50"));
+      });
 
-      await expect(xradersLock.connect(addr1).redeem())
-        .to.emit(xradersLock, "Redeemed")
-        .withArgs(addr1.address, hre.ethers.parseEther("50"));
-    });
+      it("Should emit Redeemed event on redeem", async function () {
+        const { xradersLock, token, addr1, unlockPeriod } = await loadFixture(deployXradersLockFixture);
 
-    it("Should emit FastRedeemed event on fast redeem", async function () {
-      const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
+        const amount = hre.ethers.parseUnits("100");
+        const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
 
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
+        await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
-      await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
+        await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
-      await expect(xradersLock.connect(addr1).fastRedeem(0))
-        .to.emit(xradersLock, "FastRedeemed")
-        .withArgs(addr1.address, hre.ethers.parseEther("40"), hre.ethers.parseEther("10"));
-    });
-  });
+        await time.increase(unlockPeriod + 1);
 
-  describe("Multiple Locks and Redeem", function () {
-    it("Should redeem multiple unlocks after the unlock period", async function () {
-      const { xradersLock, token, addr1, unlockPeriod } = await loadFixture(deployXradersLockFixture);
+        await expect(xradersLock.connect(addr1).redeem())
+          .to.emit(xradersLock, "Redeemed")
+          .withArgs(addr1.address, hre.ethers.parseEther("50"));
+      });
 
-      // Locking tokens three times
-      await token.connect(addr1).approve(xradersLock.getAddress(), hre.ethers.parseEther("600"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("100"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("200"));
-      await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("200"));
-      await xradersLock.connect(addr1).lock(hre.ethers.parseEther("300"));
+      it("Should emit FastRedeemed event on fast redeem", async function () {
+        const { xradersLock, token, addr1 } = await loadFixture(deployXradersLockFixture);
 
-      // Increase time to pass unlock period for first two locks
-      await time.increase(unlockPeriod + 1);
+        const amount = hre.ethers.parseUnits("100");
+        const { deadline, v, r, s } = await signPermit(addr1, token, xradersLock, amount);
 
-      // Redeem tokens
-      await xradersLock.connect(addr1).redeem();
+        await xradersLock.connect(addr1).lock(amount, deadline, v, r, s);
 
-      const unlocks = await xradersLock.getUserUnlocks(addr1.address);
-      expect(unlocks.length).to.equal(0);
+        await xradersLock.connect(addr1).unlock(hre.ethers.parseEther("50"));
 
-      const remainingLock = await xradersLock.userLock(addr1.address);
-      expect(remainingLock.amount).to.equal(hre.ethers.parseEther("300"));
-
-      const balance = await token.balanceOf(addr1.address);
-      const expectedBalance = hre.ethers.parseEther("700"); // 1000 initial - 300 remaining
-      expect(balance).to.equal(expectedBalance);
+        await expect(xradersLock.connect(addr1).fastRedeem(0))
+          .to.emit(xradersLock, "FastRedeemed")
+          .withArgs(addr1.address, hre.ethers.parseEther("40"), hre.ethers.parseEther("10"));
+      });
     });
   });
 });

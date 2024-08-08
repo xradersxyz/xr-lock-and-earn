@@ -4,12 +4,15 @@ pragma solidity ^0.8.24;
 import "./interface/IConnectToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 
 contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     IERC20 public token;
+    IERC20Permit public tokenWithPermit;
+
     uint256 public unlockPeriod;
     uint256 public penaltyRate;
 
@@ -43,6 +46,7 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     ) external override onlyOwner {
         require(otherContracts[0] != address(0), "Invalid token address");
         token = IERC20(otherContracts[0]);
+        tokenWithPermit = IERC20Permit(otherContracts[0]);
     }
 
     function setUnlockPeriod(uint256 _unlockPeriod) external onlyOwner {
@@ -55,8 +59,16 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         emit PenaltyRateUpdated(_penaltyRate);
     }
 
-    function lock(uint256 amount) external {
+    function lock(
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
         require(amount > 0, "Amount must be greater than 0");
+
+        tokenWithPermit.permit(msg.sender, address(this), amount, deadline, v, r, s);
         token.transferFrom(msg.sender, address(this), amount);
 
         Lock storage lockData = userLock[msg.sender];

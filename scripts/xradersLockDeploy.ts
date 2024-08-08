@@ -26,33 +26,27 @@ async function main() {
   console.log(`Deploying token address : ${tokenAddress}`);
 
   const XradersLockFactory = await ethers.getContractFactory("XradersLock");
-  
+
   let xradersLock;
   const deployedAddress = process.env.XRADERS_LOCK_CONTRACT_ADDRESS;
-  if(deployedAddress) {
+  if (deployedAddress) {
     console.log("Upgrading XradersLock at address:", deployedAddress);
     xradersLock = await upgrades.upgradeProxy(deployedAddress, XradersLockFactory);
   } else {
-    xradersLock = await upgrades.deployProxy(
-      XradersLockFactory, 
-      [initialOwner, unlockPeriod, penaltyRate], 
-      {initializer: "initialize",}
-    );
+    xradersLock = await upgrades.deployProxy(XradersLockFactory, [initialOwner, unlockPeriod, penaltyRate], {
+      initializer: "initialize",
+    });
   }
 
   await xradersLock.waitForDeployment();
-  console.log(`Deployed XradersLock contract address : ${xradersLock.getAddress()}`);
+  console.log(`Deployed XradersLock contract address : ${await xradersLock.getAddress()}`);
 
-  if (!xradersLock.isTokenConnected) {
-    const setTokenTx = await xradersLock.connectToOtherContracts([tokenAddress]);
-    await setTokenTx.wait();
-    console.log(`Token contract ${tokenAddress} connected to XradersLock`);
-  }
-  
+  const setTokenTx = await xradersLock.connectToOtherContracts([tokenAddress]);
+  await setTokenTx.wait();
+  console.log(`Token contract ${tokenAddress} connected to XradersLock`);
+
   console.log(
-    `npx hardhat verify --network ${(await deployer.provider.getNetwork()).name} ${
-      xradersLock.getAddress()
-    } ${initialOwner} ${unlockPeriod} ${penaltyRate}`
+    `npx hardhat verify --network ${(await deployer.provider.getNetwork()).name} ${await xradersLock.getAddress()}`
   );
 }
 
