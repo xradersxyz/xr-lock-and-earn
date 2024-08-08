@@ -84,8 +84,7 @@ contract XradersLockClaim is IConnectToken, Initializable, OwnableUpgradeable, P
         require(token.transfer(owner(), balance), "Transfer failed");
     }
 
-    function updateMerkleRoot(bytes32 _newMerkleRoot) external onlyOwner whenNotPaused {
-        require(block.timestamp / 1 days > lastMerkleUpdateDay, "Merkle root can only be updated once a day");
+    function updateMerkleRoot(bytes32 _newMerkleRoot) external onlyOwner whenPaused {
         merkleRoot = _newMerkleRoot;
         lastMerkleUpdateDay = block.timestamp / 1 days;
         emit MerkleRootUpdated(_newMerkleRoot);
