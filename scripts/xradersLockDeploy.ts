@@ -21,6 +21,7 @@ async function main() {
 
   const unlockPeriod = 7 * 24 * 60 * 60; // 7 days in seconds
   const penaltyRate = 20; // 20%
+  const treasuryAddress = process.env.XR_TREASURY_ADDRESS as string;
 
   console.log(`Deploying contracts with the account : ${deployer.address}`);
   console.log(`Deploying token address : ${tokenAddress}`);
@@ -31,22 +32,33 @@ async function main() {
   const deployedAddress = process.env.XRADERS_LOCK_CONTRACT_ADDRESS;
   if (deployedAddress) {
     console.log("Upgrading XradersLock at address:", deployedAddress);
-    xradersLock = await upgrades.upgradeProxy(deployedAddress, XradersLockFactory);
+    xradersLock = await upgrades.upgradeProxy(
+      deployedAddress,
+      XradersLockFactory
+    );
   } else {
-    xradersLock = await upgrades.deployProxy(XradersLockFactory, [initialOwner, unlockPeriod, penaltyRate], {
-      initializer: "initialize",
-    });
+    xradersLock = await upgrades.deployProxy(
+      XradersLockFactory,
+      [initialOwner, unlockPeriod, penaltyRate, treasuryAddress],
+      {
+        initializer: "initialize",
+      }
+    );
   }
 
   await xradersLock.waitForDeployment();
-  console.log(`Deployed XradersLock contract address : ${await xradersLock.getAddress()}`);
+  console.log(
+    `Deployed XradersLock contract address : ${await xradersLock.getAddress()}`
+  );
 
   const setTokenTx = await xradersLock.connectToOtherContracts([tokenAddress]);
   await setTokenTx.wait();
   console.log(`Token contract ${tokenAddress} connected to XradersLock`);
 
   console.log(
-    `npx hardhat verify --network ${(await deployer.provider.getNetwork()).name} ${await xradersLock.getAddress()}`
+    `npx hardhat verify --network ${
+      (await deployer.provider.getNetwork()).name
+    } ${await xradersLock.getAddress()}`
   );
 }
 

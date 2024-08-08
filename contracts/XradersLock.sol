@@ -8,13 +8,13 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-
 contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     IERC20 public token;
     IERC20Permit public tokenWithPermit;
 
     uint256 public unlockPeriod;
     uint256 public penaltyRate;
+    address public treasuryAddress;
 
     struct Lock {
         uint256 amount;
@@ -26,19 +26,26 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
     event UnlockPeriodUpdated(uint256 newUnlockPeriod);
     event PenaltyRateUpdated(uint256 newPenaltyRate);
+    event TreasuryAddressUpdated(address newTreasuryAddress);
     event Locked(address indexed user, uint256 amount);
     event Unlocked(address indexed user, uint256 amount);
     event Redeemed(address indexed user, uint256 amount);
-    event FastRedeemed(address indexed user, uint256 amount, uint256 penaltyAmount);
+    event FastRedeemed(
+        address indexed user,
+        uint256 amount,
+        uint256 penaltyAmount
+    );
 
     function initialize(
         address initialOwner,
         uint256 _unlockPeriod,
-        uint256 _penaltyRate
+        uint256 _penaltyRate,
+        address _treasuryAddress
     ) public initializer {
         __Ownable_init(initialOwner);
         unlockPeriod = _unlockPeriod;
         penaltyRate = _penaltyRate;
+        treasuryAddress = _treasuryAddress;
     }
 
     function connectToOtherContracts(
@@ -59,6 +66,12 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         emit PenaltyRateUpdated(_penaltyRate);
     }
 
+    function setTreasuryAddress(address _treasuryAddress) external onlyOwner {
+        require(_treasuryAddress != address(0), "Invalid treasury address");
+        treasuryAddress = _treasuryAddress;
+        emit TreasuryAddressUpdated(_treasuryAddress);
+    }
+
     function lock(
         uint256 amount,
         uint256 deadline,
@@ -68,7 +81,15 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     ) external {
         require(amount > 0, "Amount must be greater than 0");
 
-        tokenWithPermit.permit(msg.sender, address(this), amount, deadline, v, r, s);
+        tokenWithPermit.permit(
+            msg.sender,
+            address(this),
+            amount,
+            deadline,
+            v,
+            r,
+            s
+        );
         token.transferFrom(msg.sender, address(this), amount);
 
         Lock storage lockData = userLock[msg.sender];
@@ -128,9 +149,14 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
         uint256 amount = (unlocks[index].amount * (100 - penaltyRate)) / 100;
         uint256 penaltyAmount = unlocks[index].amount - amount;
-        
+
         require(token.transfer(msg.sender, amount), "Token transfer failed");
-        ERC20Burnable(address(token)).burn(penaltyAmount);
+        require(
+            token.transfer(treasuryAddress, penaltyAmount),
+            "Penalty transfer failed"
+        );
+
+        // ERC20Burnable(address(token)).burn(penaltyAmount);
 
         unlocks[index] = unlocks[unlocks.length - 1];
         unlocks.pop();
@@ -146,8 +172,8 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         Lock[] memory unlocks = userUnlocks[user];
         uint256 amount = 0;
 
-        for(uint256 i=0;i<unlocks.length;i++) {
-            if(block.timestamp >= unlocks[i].timestamp) {
+        for (uint256 i = 0; i < unlocks.length; i++) {
+            if (block.timestamp >= unlocks[i].timestamp) {
                 amount += unlocks[i].amount;
             }
         }
@@ -155,7 +181,9 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         return amount;
     }
 
-    function getUserUnlocks(address user) external view returns (Lock[] memory) {
+    function getUserUnlocks(
+        address user
+    ) external view returns (Lock[] memory) {
         return userUnlocks[user];
     }
 }
