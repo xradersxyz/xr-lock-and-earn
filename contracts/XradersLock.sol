@@ -80,6 +80,7 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         bytes32 s
     ) external {
         require(amount > 0, "Amount must be greater than 0");
+        require(amount % (10**18) == 0, "Amount must be a whole number of tokens");
 
         tokenWithPermit.permit(
             msg.sender,
