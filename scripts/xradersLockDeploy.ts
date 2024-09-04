@@ -22,6 +22,7 @@ async function main() {
   const unlockPeriod = 7 * 24 * 60 * 60; // 7 days in seconds
   const penaltyRate = 20; // 20%
   const treasuryAddress = process.env.XR_TREASURY_ADDRESS as string;
+  const pancakeRouterAddress = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
 
   console.log(`Deploying contracts with the account : ${deployer.address}`);
   console.log(`Deploying token address : ${tokenAddress}`);
@@ -39,7 +40,7 @@ async function main() {
   } else {
     xradersLock = await upgrades.deployProxy(
       XradersLockFactory,
-      [initialOwner, unlockPeriod, penaltyRate, treasuryAddress],
+      [initialOwner, unlockPeriod, penaltyRate, treasuryAddress, pancakeRouterAddress],
       {
         initializer: "initialize",
       }
@@ -47,9 +48,10 @@ async function main() {
   }
 
   await xradersLock.waitForDeployment();
-  console.log(
-    `Deployed XradersLock contract address : ${await xradersLock.getAddress()}`
-  );
+  console.log(`Deployed XradersLock contract address : ${await xradersLock.getAddress()}`);
+
+  await xradersLock.setPancakeRouter(pancakeRouterAddress);
+  console.log(`Pancake router address : ${pancakeRouterAddress}`);
 
   const setTokenTx = await xradersLock.connectToOtherContracts([tokenAddress]);
   await setTokenTx.wait();

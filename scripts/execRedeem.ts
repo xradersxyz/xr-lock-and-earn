@@ -13,7 +13,10 @@ async function main() {
   const redeemableAmount = await xradersLock.getRedeeambleAmount(deployer.address);
   console.log(`Redeemable Amount : ${redeemableAmount}`);
 
-  const fastReedemTx = await xradersLock.fastRedeem(0, false);
+  const penaltyAmountInBNB = await xradersLock.getPenaltyAmountInBNB(0);
+  console.log(`Penalty Amount in BNB: ${penaltyAmountInBNB}`);
+
+  const fastReedemTx = await xradersLock.fastRedeemInBNB(0, { value: penaltyAmountInBNB });
   const receipt = await fastReedemTx.wait();
 
   console.log('redeem tx : ', fastReedemTx);
