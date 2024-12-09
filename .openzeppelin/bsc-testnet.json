@@ -35,6 +35,11 @@
       "address": "0xb7ae3fd90Cfe0904EdDB2fFfF782f99DbAAA2A09",
       "txHash": "0xb60544fbefcd080b336300319cbd0e7166ed3d9b565d44e8c6947e56841cda8e",
       "kind": "transparent"
+    },
+    {
+      "address": "0xFc8e70788E6eb06AE7c65A6d580Ee95Fd805367d",
+      "txHash": "0xfeb14b62f461b6dc5ba6ed174d05333ed81b9d3322efcecdf1ff7c89e0527923",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -1081,8 +1086,8 @@
       }
     },
     "5eb6272abc6bd62add832fdff3868f7c9965f2a301c0bb1f4c87add7e933071c": {
-      "address": "0x3852cf35EA9B7F9614E1E882D4c7E606B758AFd8",
-      "txHash": "0xdde86e00ba9f1a8212c37c9bc090082766440f1b54f8601635c6d64c314d33fd",
+      "address": "0x43d280bB7e6441e36a99cc044dCE3340e833b638",
+      "txHash": "0xa5c2f6010862a7c5b834dedf21f977a027a1ff375d2d81451750d82282cb0698",
       "layout": {
         "solcVersion": "0.8.24",
         "storage": [
@@ -1090,7 +1095,7 @@
             "label": "token",
             "offset": 0,
             "slot": "0",
-            "type": "t_contract(IERC20)2358",
+            "type": "t_contract(IERC20)1224",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:13"
           },
@@ -1098,7 +1103,7 @@
             "label": "tokenWithPermit",
             "offset": 0,
             "slot": "1",
-            "type": "t_contract(IERC20Permit)2786",
+            "type": "t_contract(IERC20Permit)1332",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:14"
           },
@@ -1130,7 +1135,7 @@
             "label": "userLock",
             "offset": 0,
             "slot": "5",
-            "type": "t_mapping(t_address,t_struct(Lock)11104_storage)",
+            "type": "t_mapping(t_address,t_struct(Lock)1790_storage)",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:25"
           },
@@ -1138,7 +1143,7 @@
             "label": "userUnlocks",
             "offset": 0,
             "slot": "6",
-            "type": "t_mapping(t_address,t_array(t_struct(Lock)11104_storage)dyn_storage)",
+            "type": "t_mapping(t_address,t_array(t_struct(Lock)1790_storage)dyn_storage)",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:26"
           },
@@ -1146,7 +1151,7 @@
             "label": "pancakeRouter",
             "offset": 0,
             "slot": "7",
-            "type": "t_contract(IUniswapV2Router02)9926",
+            "type": "t_contract(IUniswapV2Router02)1758",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:41"
           },
@@ -1206,31 +1211,31 @@
             "label": "address[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Lock)11104_storage)dyn_storage": {
+          "t_array(t_struct(Lock)1790_storage)dyn_storage": {
             "label": "struct XradersLock.Lock[]",
             "numberOfBytes": "32"
           },
-          "t_contract(IERC20)2358": {
+          "t_contract(IERC20)1224": {
             "label": "contract IERC20",
             "numberOfBytes": "20"
           },
-          "t_contract(IERC20Permit)2786": {
+          "t_contract(IERC20Permit)1332": {
             "label": "contract IERC20Permit",
             "numberOfBytes": "20"
           },
-          "t_contract(IUniswapV2Router02)9926": {
+          "t_contract(IUniswapV2Router02)1758": {
             "label": "contract IUniswapV2Router02",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_address,t_array(t_struct(Lock)11104_storage)dyn_storage)": {
+          "t_mapping(t_address,t_array(t_struct(Lock)1790_storage)dyn_storage)": {
             "label": "mapping(address => struct XradersLock.Lock[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(Lock)11104_storage)": {
+          "t_mapping(t_address,t_struct(Lock)1790_storage)": {
             "label": "mapping(address => struct XradersLock.Lock)",
             "numberOfBytes": "32"
           },
-          "t_struct(Lock)11104_storage": {
+          "t_struct(Lock)1790_storage": {
             "label": "struct XradersLock.Lock",
             "members": [
               {
