@@ -25,8 +25,6 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     mapping(address => Lock) public userLock;
     mapping(address => Lock[]) public userUnlocks;
 
-    mapping(address => uint256) private lastCheckInTime;
-
     event UnlockPeriodUpdated(uint256 newUnlockPeriod);
     event PenaltyRateUpdated(uint256 newPenaltyRate);
     event TreasuryAddressUpdated(address newTreasuryAddress);
@@ -35,17 +33,25 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     event Locked(address indexed user, uint256 amount);
     event Unlocked(address indexed user, uint256 amount);
     event Redeemed(address indexed user, uint256 amount);
-    event FastRedeemed(address indexed user, uint256 amount, uint256 penaltyAmount);
-    event FastRedeemedInBNB(address indexed user, uint256 amount, uint256 penaltyAmount);
+    event FastRedeemed(
+        address indexed user,
+        uint256 amount,
+        uint256 penaltyAmount
+    );
+    event FastRedeemedInBNB(
+        address indexed user,
+        uint256 amount,
+        uint256 penaltyAmount
+    );
     event PenaltyPaidInBNB(address indexed user, uint256 amountInBNB);
     event PenaltyPaidInXR(address indexed user, uint256 amountInXR);
-    
-    event CheckIn(address indexed user);
-    event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
 
     IUniswapV2Router02 public pancakeRouter;
     address[] public path;
-    
+
+    mapping(address => uint256) private lastCheckInTime;
+    event CheckIn(address indexed user);
+    event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
 
     function initialize(
         address initialOwner,
@@ -59,7 +65,9 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         treasuryAddress = _treasuryAddress;
     }
 
-    function connectToOtherContracts(address[] memory otherContracts) external override onlyOwner {
+    function connectToOtherContracts(
+        address[] memory otherContracts
+    ) external override onlyOwner {
         require(otherContracts[0] != address(0), "Invalid token address");
         token = IERC20(otherContracts[0]);
         tokenWithPermit = IERC20Permit(otherContracts[0]);
@@ -107,7 +115,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         bytes32 s
     ) external {
         require(amount > 0, "Amount must be greater than 0");
-        require(amount % (10**18) == 0, "Amount must be a whole number of tokens");
+        require(
+            amount % (10 ** 18) == 0,
+            "Amount must be a whole number of tokens"
+        );
 
         tokenWithPermit.permit(
             msg.sender,
@@ -128,7 +139,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
     function unlock(uint256 amount) external {
         Lock storage lockData = userLock[msg.sender];
-        require(amount > 0 && amount <= lockData.amount, "Invalid unlock amount");
+        require(
+            amount > 0 && amount <= lockData.amount,
+            "Invalid unlock amount"
+        );
 
         lockData.amount -= amount;
         userUnlocks[msg.sender].push(
@@ -166,7 +180,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
         Lock[] storage unlocks = userUnlocks[msg.sender];
         require(unlocks[index].amount > 0, "No unlock request found");
-        require(block.timestamp < unlocks[index].timestamp, "Use redeem function after unlock period");
+        require(
+            block.timestamp < unlocks[index].timestamp,
+            "Use redeem function after unlock period"
+        );
 
         uint256 amount = (unlocks[index].amount * (100 - penaltyRate)) / 100;
         uint256 penaltyAmount = unlocks[index].amount - amount;
@@ -185,13 +202,19 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
         Lock[] storage unlocks = userUnlocks[msg.sender];
         require(unlocks[index].amount > 0, "No unlock request found");
-        require(block.timestamp < unlocks[index].timestamp, "Use redeem function after unlock period");
+        require(
+            block.timestamp < unlocks[index].timestamp,
+            "Use redeem function after unlock period"
+        );
 
         uint256 penaltyAmount = getPenaltyAmountInBNB(index);
         payPenaltyInBNB(penaltyAmount);
-        
+
         uint256 redeemAmount = unlocks[index].amount;
-        require(token.transfer(msg.sender, redeemAmount), "Token transfer failed");
+        require(
+            token.transfer(msg.sender, redeemAmount),
+            "Token transfer failed"
+        );
 
         unlocks[index] = unlocks[unlocks.length - 1];
         unlocks.pop();
@@ -199,40 +222,52 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         emit FastRedeemedInBNB(msg.sender, redeemAmount, penaltyAmount);
     }
 
-    function getPenaltyAmountInBNB(uint256 index) public view returns (uint256) {
+    function getPenaltyAmountInBNB(
+        uint256 index
+    ) public view returns (uint256) {
         require(index < userUnlocks[msg.sender].length, "Invalid unlock index");
         Lock[] storage unlocks = userUnlocks[msg.sender];
         uint256 amount = unlocks[index].amount;
 
-        uint256 currentPenaltyRate = getCurrentPenaltyRate(unlocks[index].timestamp);
+        uint256 currentPenaltyRate = getCurrentPenaltyRate(
+            unlocks[index].timestamp
+        );
         uint256 penaltyXR = (amount * currentPenaltyRate) / 100;
 
-        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(10**18, path);
+        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(
+            10 ** 18,
+            path
+        );
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
-        
-        return (bnbPerXr * penaltyXR) / (10**18);
+
+        return (bnbPerXr * penaltyXR) / (10 ** 18);
     }
 
-    function getCurrentPenaltyRate(uint256 unlockTimestamp) public view returns (uint256) {
+    function getCurrentPenaltyRate(
+        uint256 unlockTimestamp
+    ) public view returns (uint256) {
         if (block.timestamp >= unlockTimestamp) {
             return 0;
         }
 
-        uint256 timeElapsed = block.timestamp - (unlockTimestamp - unlockPeriod);
+        uint256 timeElapsed = block.timestamp -
+            (unlockTimestamp - unlockPeriod);
         uint256 timePercentElapsed = (timeElapsed * 100) / unlockPeriod;
-        uint256 reducedPenaltyRate = penaltyRate * timePercentElapsed / 100;
+        uint256 reducedPenaltyRate = (penaltyRate * timePercentElapsed) / 100;
 
         return penaltyRate - reducedPenaltyRate;
     }
 
     function payPenaltyInBNB(uint256 penaltyAmount) internal {
         require(msg.value >= penaltyAmount, "Insufficient BNB sent");
-        
+
         if (msg.value > penaltyAmount) {
-            (bool refundSuccess, ) = msg.sender.call{value: msg.value - penaltyAmount}("");
+            (bool refundSuccess, ) = msg.sender.call{
+                value: msg.value - penaltyAmount
+            }("");
             require(refundSuccess, "Refund failed");
         }
-        
+
         (bool success, ) = treasuryAddress.call{value: penaltyAmount}("");
         require(success, "BNB transfer failed");
 
@@ -240,7 +275,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     }
 
     function payPenaltyInXR(uint256 penaltyAmount) internal {
-        require(token.transfer(treasuryAddress, penaltyAmount), "Penalty transfer failed");
+        require(
+            token.transfer(treasuryAddress, penaltyAmount),
+            "Penalty transfer failed"
+        );
         emit PenaltyPaidInXR(msg.sender, penaltyAmount);
     }
 
@@ -261,7 +299,9 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         return amount;
     }
 
-    function getUserUnlocks(address user) external view returns (Lock[] memory) {
+    function getUserUnlocks(
+        address user
+    ) external view returns (Lock[] memory) {
         return userUnlocks[user];
     }
 
@@ -285,12 +325,14 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
     function payCheckinInBNB(uint256 checkInAmount) internal {
         require(msg.value >= checkInAmount, "Insufficient BNB sent");
-        
+
         if (msg.value > checkInAmount) {
-            (bool refundSuccess, ) = msg.sender.call{value: msg.value - checkInAmount}("");
+            (bool refundSuccess, ) = msg.sender.call{
+                value: msg.value - checkInAmount
+            }("");
             require(refundSuccess, "Refund failed");
         }
-        
+
         (bool success, ) = treasuryAddress.call{value: checkInAmount}("");
         require(success, "BNB transfer failed");
 
@@ -307,25 +349,35 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         return lastCheckedInDate != currentDay;
     }
 
-    function getCheckinAmountInBNB(address user) public view returns (uint256){
-        uint256 lockedAmount = getTotalLockedAmount(user);
+    function getCheckinAmountInBNB(address user) public view returns (uint256) {
+        // uint256 lockedAmount = getTotalLockedAmount(user);
+
+        Lock storage lockData = userLock[user];
+
+        // uint256 lockedAmount = userLock[user].amount;
 
         //lockpower * 0.001 * 2 계산용
         uint256 scale = 1000;
         uint256 multiplier = 2;
-        
-        uint256 xrAmountIn = 1*10**18;
-        
+
+        uint256 xrAmountIn = 1;
+
         //xr lock power 가 500 보다 커야 함
-        if(lockedAmount > (1 / (multiplier/scale)) * 10**18){
-            xrAmountIn = lockedAmount;
+        if (
+            lockData.amount > 0 &&
+            lockData.amount > (1 / (multiplier / scale)) * 10 ** 18
+        ) {
+            xrAmountIn = lockData.amount / 10 ** 18;
         }
 
-        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(xrAmountIn, path);
+        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(
+            10 ** 18,
+            path
+        );
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
-        return bnbPerXr;
+
+        return bnbPerXr * xrAmountIn;
     }
-    
 
     function getCurrentTime() private view returns (uint256) {
         // 1 day = 86400 seconds

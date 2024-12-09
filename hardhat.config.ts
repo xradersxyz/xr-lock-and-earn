@@ -42,6 +42,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: BSCSCAN_API_KEY as string,
       testnet: BSCSCAN_API_KEY as string,
+      bsc: BSCSCAN_API_KEY as string,
     },
     customChains: [
       {
