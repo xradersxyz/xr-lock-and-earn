@@ -25,6 +25,8 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     mapping(address => Lock) public userLock;
     mapping(address => Lock[]) public userUnlocks;
 
+    mapping(address => uint256) private lastCheckInTime;
+
     event UnlockPeriodUpdated(uint256 newUnlockPeriod);
     event PenaltyRateUpdated(uint256 newPenaltyRate);
     event TreasuryAddressUpdated(address newTreasuryAddress);
@@ -37,6 +39,9 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     event FastRedeemedInBNB(address indexed user, uint256 amount, uint256 penaltyAmount);
     event PenaltyPaidInBNB(address indexed user, uint256 amountInBNB);
     event PenaltyPaidInXR(address indexed user, uint256 amountInXR);
+    
+    event CheckIn(address indexed user);
+    event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
 
     IUniswapV2Router02 public pancakeRouter;
     address[] public path;
@@ -262,5 +267,68 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
     function getPath() public view returns (address[] memory) {
         return path;
+    }
+
+    function checkIn() external payable {
+        require(canCheckIn(), "Already checked in today");
+
+        uint256 checkInBnbAmount = getCheckinAmountInBNB(msg.sender);
+
+        require(checkInBnbAmount > 0, "Lock power check error");
+
+        payCheckinInBNB(checkInBnbAmount);
+
+        lastCheckInTime[msg.sender] = getCurrentTime();
+
+        emit CheckIn(msg.sender);
+    }
+
+    function payCheckinInBNB(uint256 checkInAmount) internal {
+        require(msg.value >= checkInAmount, "Insufficient BNB sent");
+        
+        if (msg.value > checkInAmount) {
+            (bool refundSuccess, ) = msg.sender.call{value: msg.value - checkInAmount}("");
+            require(refundSuccess, "Refund failed");
+        }
+        
+        (bool success, ) = treasuryAddress.call{value: checkInAmount}("");
+        require(success, "BNB transfer failed");
+
+        emit PayCheckinInBNB(msg.sender, checkInAmount);
+    }
+
+    function getLastCheckInTime(address user) public view returns (uint256) {
+        return lastCheckInTime[user];
+    }
+
+    function canCheckIn() private view returns (bool) {
+        uint256 currentDay = getCurrentTime();
+        uint256 lastCheckedInDate = lastCheckInTime[msg.sender];
+        return lastCheckedInDate != currentDay;
+    }
+
+    function getCheckinAmountInBNB(address user) public view returns (uint256){
+        uint256 lockedAmount = getTotalLockedAmount(user);
+
+        //lockpower * 0.001 * 2 계산용
+        uint256 scale = 1000;
+        uint256 multiplier = 2;
+        
+        uint256 xrAmountIn = 1*10**18;
+        
+        //xr lock power 가 500 보다 커야 함
+        if(lockedAmount > (1 / (multiplier/scale)) * 10**18){
+            xrAmountIn = lockedAmount;
+        }
+
+        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(xrAmountIn, path);
+        uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
+        return bnbPerXr;
+    }
+    
+
+    function getCurrentTime() private view returns (uint256) {
+        // 1 day = 86400 seconds
+        return block.timestamp / 86400;
     }
 }
