@@ -8,8 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
+contract XradersLock is
+    IConnectToken,
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     IERC20 public token;
     IERC20Permit public tokenWithPermit;
 
@@ -49,8 +55,21 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     IUniswapV2Router02 public pancakeRouter;
     address[] public path;
 
-    mapping(address => uint256) private lastCheckInTime;
-    event CheckIn(address indexed user);
+    struct CheckInData {
+        address address1;
+        address address2;
+        uint256 uid;
+        uint256 checkedInTime;
+    }
+
+    mapping(uint256 => CheckInData) private lastCheckInTime;
+    event CheckIn(
+        address indexed user,
+        address address1,
+        address address2,
+        uint256 uid,
+        uint256 amountInBNB
+    );
     event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
 
     function initialize(
@@ -309,21 +328,37 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         return path;
     }
 
-    function checkIn() external payable {
-        require(canCheckIn(), "Already checked in today");
+    function checkIn(
+        address address1,
+        address address2,
+        uint256 uid
+    ) external payable {
+        require(canCheckIn(uid), "Already checked in today");
 
-        uint256 checkInBnbAmount = getCheckinAmountInBNB(msg.sender);
+        uint256 totalLockAmount = 0;
+
+        if (address1 != address(0)) {
+            totalLockAmount = userLock[address1].amount;
+        }
+
+        if (address2 != address(0) && address1 != address2) {
+            totalLockAmount += userLock[address2].amount;
+        }
+
+        uint256 checkInBnbAmount = getCheckinAmountInBNB(totalLockAmount);
 
         require(checkInBnbAmount > 0, "Lock power check error");
 
         payCheckinInBNB(checkInBnbAmount);
 
-        lastCheckInTime[msg.sender] = getCurrentTime();
+        lastCheckInTime[uid].checkedInTime = getCurrentTime();
+        lastCheckInTime[uid].address1 = address1;
+        lastCheckInTime[uid].address2 = address2;
 
-        emit CheckIn(msg.sender);
+        emit CheckIn(msg.sender, address1, address2, uid, checkInBnbAmount);
     }
 
-    function payCheckinInBNB(uint256 checkInAmount) internal {
+    function payCheckinInBNB(uint256 checkInAmount) internal nonReentrant {
         require(msg.value >= checkInAmount, "Insufficient BNB sent");
 
         if (msg.value > checkInAmount) {
@@ -339,23 +374,19 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         emit PayCheckinInBNB(msg.sender, checkInAmount);
     }
 
-    function getLastCheckInTime(address user) public view returns (uint256) {
-        return lastCheckInTime[user];
+    function getLastCheckInTime(uint256 uid) public view returns (uint256) {
+        return lastCheckInTime[uid].checkedInTime;
     }
 
-    function canCheckIn() private view returns (bool) {
+    function canCheckIn(uint256 uid) private view returns (bool) {
         uint256 currentDay = getCurrentTime();
-        uint256 lastCheckedInDate = lastCheckInTime[msg.sender];
+        uint256 lastCheckedInDate = lastCheckInTime[uid].checkedInTime;
         return lastCheckedInDate != currentDay;
     }
 
-    function getCheckinAmountInBNB(address user) public view returns (uint256) {
-        // uint256 lockedAmount = getTotalLockedAmount(user);
-
-        Lock storage lockData = userLock[user];
-
-        // uint256 lockedAmount = userLock[user].amount;
-
+    function getCheckinAmountInBNB(
+        uint256 lockedAmount
+    ) public view returns (uint256) {
         //lockpower * 0.001 * 2 계산용
         // uint256 scale = 1000;
         //5 계산용
@@ -364,11 +395,11 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         //최소 Lock xr 수량 500 테스트 5
         uint256 minLockedAmount = 5 * 10 ** 18;
 
-        uint256 userXrLockAmount = 5 * 10 ** 18;
+        uint256 userXrLockAmount = minLockedAmount;
 
         //xr lock power 가 500 보다 커야 함. 테스트 5
-        if (lockData.amount > minLockedAmount) {
-            userXrLockAmount = lockData.amount;
+        if (lockedAmount > minLockedAmount) {
+            userXrLockAmount = lockedAmount;
         }
 
         uint256[] memory amountsOut = pancakeRouter.getAmountsOut(
@@ -380,8 +411,12 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
 
-        // return ((userXrLockAmount / 10 ** 18) * bnbPerXr)*multiplier / scale;
-        return (userXrLockAmount * bnbPerXr * multiplier) / (scale * 10 ** 18);
+        uint256 result = (userXrLockAmount * bnbPerXr * multiplier) /
+            (scale * 10 ** 18);
+
+        require(result > 0, "Calculation overflow error");
+
+        return result;
     }
 
     function getCurrentTime() private view returns (uint256) {

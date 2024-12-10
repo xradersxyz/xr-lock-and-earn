@@ -35,6 +35,51 @@
       "address": "0xc4FaAfaBCb455038c0485e787C97319f5A841130",
       "txHash": "0x18e440d0b59dd249321e4062a8446a1a0c3e281c6a2f766eb7fb7753203d0c1b",
       "kind": "transparent"
+    },
+    {
+      "address": "0x045DEd4D8509B6e0C4Ea630D63Ea673696CfFAF8",
+      "txHash": "0xbacd82eab4f6f6e7db4a01b5d287fc52d3ef083da37e5fc0eb0362f559aa5abd",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x88a2108775581a39aF9cd20fdd5F4AD8bEd1124f",
+      "txHash": "0x84978a015421d19bedf1378dbd9a2d56d9dc902b2c1f0d01b99824e60d9c8a2b",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xE101B2f5f180a5f242d7B030d1932958a95bfE72",
+      "txHash": "0xcc27e3c02ec174a6c08a04b89d8eb2dabd7245c8244f256b13412aae8b639e48",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x7270a76f98C1821a0e9dF6cd05BB5Be6596aE816",
+      "txHash": "0xec250507721e76e280985b9d97f0d04020eddf165c6bdf1f5856d0251fa036ec",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xA8de249493143819843b35021E0dBde18dCbe360",
+      "txHash": "0x76ec9385cb179e2b7165f44c09368e0a98743a13cade2efe02ffce51198ac4ad",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x185E65c95C57E1Ad8EB1Fb466A4C6C43006082C8",
+      "txHash": "0xcefa80b1da3fd0c0ddc7c8c886d2d2aed4d04c6dd28cda0e5829ea844b935327",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xAf93B4f356c22d488CCb4Bb0Fe83ED7f2C066440",
+      "txHash": "0xf0889b4035ad91e6bcc16fcb538f1abefb3405601bd5c487d25e68e4b45ad7df",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xe83452aAA3a7eF0d58155Ce944Bc78A8d4b949FE",
+      "txHash": "0x80b6274242cd06c1a3947fd680b00bf604af80bed48a37d2924601ee864087da",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x335457bF21C1B8492f165a45130a4027B6B99c63",
+      "txHash": "0x8d9ab74252e7f5f867c554fc1c66b1811dfaa9f1d44c668527d8dfebc30e3f39",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -3952,6 +3997,544 @@
           }
         },
         "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "0f8f953f63b685fd2ecb52c166715003a6ca9bd7937bf22cbb9ec3f9d9197e8f": {
+      "address": "0x82151c3A6c242651adfc655C4651caafC7Fb0781",
+      "txHash": "0x2602767eeae8f81d1c1e5ae8841ddc4128cb6c2aa5896aba43cbf783ba472a28",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [
+          {
+            "label": "token",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20)1353",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:19"
+          },
+          {
+            "label": "tokenWithPermit",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC20Permit)1461",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:20"
+          },
+          {
+            "label": "unlockPeriod",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:22"
+          },
+          {
+            "label": "penaltyRate",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:23"
+          },
+          {
+            "label": "treasuryAddress",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:24"
+          },
+          {
+            "label": "userLock",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_address,t_struct(Lock)1922_storage)",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:31"
+          },
+          {
+            "label": "userUnlocks",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_array(t_struct(Lock)1922_storage)dyn_storage)",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:32"
+          },
+          {
+            "label": "pancakeRouter",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IUniswapV2Router02)1887",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:55"
+          },
+          {
+            "label": "path",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:56"
+          },
+          {
+            "label": "lastCheckInTime",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_uint256,t_struct(CheckInData)2014_storage)",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:65"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)80_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)13_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(ReentrancyGuardStorage)174_storage": {
+            "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
+            "members": [
+              {
+                "label": "_status",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Lock)1922_storage)dyn_storage": {
+            "label": "struct XradersLock.Lock[]",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IERC20)1353": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Permit)1461": {
+            "label": "contract IERC20Permit",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IUniswapV2Router02)1887": {
+            "label": "contract IUniswapV2Router02",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_array(t_struct(Lock)1922_storage)dyn_storage)": {
+            "label": "mapping(address => struct XradersLock.Lock[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Lock)1922_storage)": {
+            "label": "mapping(address => struct XradersLock.Lock)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(CheckInData)2014_storage)": {
+            "label": "mapping(uint256 => struct XradersLock.CheckInData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(CheckInData)2014_storage": {
+            "label": "struct XradersLock.CheckInData",
+            "members": [
+              {
+                "label": "address1",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "address2",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "uid",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "checkedInTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(Lock)1922_storage": {
+            "label": "struct XradersLock.Lock",
+            "members": [
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "timestamp",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:40",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "da3ecf73e8fcd8d080506bee21e946bf2660debbab7105794017d69d1ffa7e2f": {
+      "address": "0x9ecA8306b4FA87b18b0E964C0c3461385b4726CE",
+      "txHash": "0xd07355cfc042db460a5c41f9622a955af4719f53b1f8309dbc36c26e4299d157",
+      "layout": {
+        "solcVersion": "0.8.24",
+        "storage": [
+          {
+            "label": "token",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20)1353",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:19"
+          },
+          {
+            "label": "tokenWithPermit",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IERC20Permit)1461",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:20"
+          },
+          {
+            "label": "unlockPeriod",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:22"
+          },
+          {
+            "label": "penaltyRate",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:23"
+          },
+          {
+            "label": "treasuryAddress",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:24"
+          },
+          {
+            "label": "userLock",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_address,t_struct(Lock)1922_storage)",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:31"
+          },
+          {
+            "label": "userUnlocks",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_array(t_struct(Lock)1922_storage)dyn_storage)",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:32"
+          },
+          {
+            "label": "pancakeRouter",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IUniswapV2Router02)1887",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:55"
+          },
+          {
+            "label": "path",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:56"
+          },
+          {
+            "label": "lastCheckInTime",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_mapping(t_uint256,t_struct(CheckInData)2014_storage)",
+            "contract": "XradersLock",
+            "src": "contracts/XradersLock.sol:65"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)80_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)13_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(ReentrancyGuardStorage)174_storage": {
+            "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
+            "members": [
+              {
+                "label": "_status",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Lock)1922_storage)dyn_storage": {
+            "label": "struct XradersLock.Lock[]",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IERC20)1353": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20Permit)1461": {
+            "label": "contract IERC20Permit",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IUniswapV2Router02)1887": {
+            "label": "contract IUniswapV2Router02",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_array(t_struct(Lock)1922_storage)dyn_storage)": {
+            "label": "mapping(address => struct XradersLock.Lock[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Lock)1922_storage)": {
+            "label": "mapping(address => struct XradersLock.Lock)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(CheckInData)2014_storage)": {
+            "label": "mapping(uint256 => struct XradersLock.CheckInData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(CheckInData)2014_storage": {
+            "label": "struct XradersLock.CheckInData",
+            "members": [
+              {
+                "label": "address1",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "address2",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "uid",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "checkedInTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(Lock)1922_storage": {
+            "label": "struct XradersLock.Lock",
+            "members": [
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "timestamp",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:40",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
           "erc7201:openzeppelin.storage.Ownable": [
             {
               "contract": "OwnableUpgradeable",
