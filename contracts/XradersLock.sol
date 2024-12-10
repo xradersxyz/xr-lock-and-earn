@@ -357,26 +357,31 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         // uint256 lockedAmount = userLock[user].amount;
 
         //lockpower * 0.001 * 2 계산용
-        uint256 scale = 1000;
+        // uint256 scale = 1000;
+        //5 계산용
+        uint256 scale = 10;
         uint256 multiplier = 2;
+        //최소 Lock xr 수량 500 테스트 5
+        uint256 minLockedAmount = 5 * 10 ** 18;
 
-        uint256 xrAmountIn = 1;
+        uint256 userXrLockAmount = 5 * 10 ** 18;
 
-        //xr lock power 가 500 보다 커야 함
-        if (
-            lockData.amount > 0 &&
-            lockData.amount > (1 / (multiplier / scale)) * 10 ** 18
-        ) {
-            xrAmountIn = lockData.amount / 10 ** 18;
+        //xr lock power 가 500 보다 커야 함. 테스트 5
+        if (lockData.amount > minLockedAmount) {
+            userXrLockAmount = lockData.amount;
         }
 
         uint256[] memory amountsOut = pancakeRouter.getAmountsOut(
             10 ** 18,
             path
         );
+
+        require(amountsOut.length > 0, "Pancake Router Swap fail!");
+
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
 
-        return bnbPerXr * xrAmountIn;
+        // return ((userXrLockAmount / 10 ** 18) * bnbPerXr)*multiplier / scale;
+        return (userXrLockAmount * bnbPerXr * multiplier) / (scale * 10 ** 18);
     }
 
     function getCurrentTime() private view returns (uint256) {
