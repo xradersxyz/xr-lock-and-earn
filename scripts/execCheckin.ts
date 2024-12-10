@@ -14,14 +14,14 @@ async function main() {
   const xradersLock = await ethers.getContractAt("XradersLock", contracAddress);
   // const XrToken = await ethers.getContractAt("XrToken", tokenAddress);
 
-  const checkinAmountInBnb = await xradersLock.getCheckinAmountInBNB(deployer.getAddress());
+  const checkinAmountInBnb = await xradersLock.getCheckinAmountInBNB(0);
   console.log(`CheckIn Amount in BNB: ${checkinAmountInBnb}`);
 
   // const lockAmount = ethers.parseUnits("100", 18);
   // const nonce = await XrToken.nonces(deployer.address);
   // const deadline = Math.floor(Date.now() / 1000) + 60 * 60;
 
-  const checkInTx = await xradersLock.checkIn({ value: checkinAmountInBnb });
+  const checkInTx = await xradersLock.checkIn(deployer.getAddress(),deployer.getAddress(),1234567890,{ value: checkinAmountInBnb });
   const receipt = await checkInTx.wait();
 
   console.log('Check in tx : ', checkInTx);
