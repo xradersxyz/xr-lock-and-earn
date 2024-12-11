@@ -56,19 +56,17 @@ contract XradersLock is
     address[] public path;
 
     struct CheckInData {
-        address address1;
-        address address2;
-        uint256 uid;
+        address[] wallets;
         uint256 checkedInTime;
     }
 
-    mapping(uint256 => CheckInData) private lastCheckInTime;
+    mapping(uint256 => CheckInData) private userCheckInData;
     event CheckIn(
         address indexed user,
-        address address1,
-        address address2,
         uint256 uid,
-        uint256 amountInBNB
+        uint256 amountInBNB,
+        uint256 walletLength,
+        string wallets
     );
     event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
 
@@ -328,21 +326,16 @@ contract XradersLock is
         return path;
     }
 
-    function checkIn(
-        address address1,
-        address address2,
-        uint256 uid
-    ) external payable {
+    function checkIn(address[] memory wallets, uint256 uid) external payable {
         require(canCheckIn(uid), "Already checked in today");
 
         uint256 totalLockAmount = 0;
 
-        if (address1 != address(0)) {
-            totalLockAmount = userLock[address1].amount;
-        }
-
-        if (address2 != address(0) && address1 != address2) {
-            totalLockAmount += userLock[address2].amount;
+        for (uint256 i = 0; i < wallets.length; i++) {
+            address wallet = wallets[i];
+            if (wallet != address(0)) {
+                totalLockAmount += userLock[wallet].amount;
+            }
         }
 
         uint256 checkInBnbAmount = getCheckinAmountInBNB(totalLockAmount);
@@ -351,11 +344,23 @@ contract XradersLock is
 
         payCheckinInBNB(checkInBnbAmount);
 
-        lastCheckInTime[uid].checkedInTime = getCurrentTime();
-        lastCheckInTime[uid].address1 = address1;
-        lastCheckInTime[uid].address2 = address2;
+        userCheckInData[uid].checkedInTime = getCurrentTime();
+        userCheckInData[uid].wallets = wallets;
 
-        emit CheckIn(msg.sender, address1, address2, uid, checkInBnbAmount);
+        string memory walletString = "";
+        for (uint256 i = 0; i < wallets.length; i++) {
+            walletString = string(
+                abi.encodePacked(walletString, addressToString(wallets[i]), " ")
+            );
+        }
+
+        emit CheckIn(
+            msg.sender,
+            uid,
+            checkInBnbAmount,
+            wallets.length,
+            walletString
+        );
     }
 
     function payCheckinInBNB(uint256 checkInAmount) internal nonReentrant {
@@ -375,12 +380,12 @@ contract XradersLock is
     }
 
     function getLastCheckInTime(uint256 uid) public view returns (uint256) {
-        return lastCheckInTime[uid].checkedInTime;
+        return userCheckInData[uid].checkedInTime;
     }
 
     function canCheckIn(uint256 uid) private view returns (bool) {
         uint256 currentDay = getCurrentTime();
-        uint256 lastCheckedInDate = lastCheckInTime[uid].checkedInTime;
+        uint256 lastCheckedInDate = userCheckInData[uid].checkedInTime;
         return lastCheckedInDate != currentDay;
     }
 
@@ -422,5 +427,20 @@ contract XradersLock is
     function getCurrentTime() private view returns (uint256) {
         // 1 day = 86400 seconds
         return block.timestamp / 86400;
+    }
+
+    function addressToString(
+        address _addr
+    ) private pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_addr)));
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(42);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint256 i = 0; i < 20; i++) {
+            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
     }
 }

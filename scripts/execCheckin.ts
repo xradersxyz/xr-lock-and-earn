@@ -21,11 +21,15 @@ async function main() {
   // const nonce = await XrToken.nonces(deployer.address);
   // const deadline = Math.floor(Date.now() / 1000) + 60 * 60;
 
-  const checkInTx = await xradersLock.checkIn(deployer.getAddress(),deployer.getAddress(),1234567890,{ value: checkinAmountInBnb });
+  const checkInTx = await xradersLock.checkIn(
+    [deployer.getAddress(), deployer.getAddress()],
+    1234567892,
+    { value: checkinAmountInBnb }
+  );
   const receipt = await checkInTx.wait();
 
-  console.log('Check in tx : ', checkInTx);
-  console.log('Check in receipt : ', receipt);
+  console.log("Check in tx : ", checkInTx);
+  console.log("Check in receipt : ", receipt);
 }
 
 main()
