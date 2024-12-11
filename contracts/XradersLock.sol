@@ -70,6 +70,10 @@ contract XradersLock is
     );
     event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
 
+    uint256 public checkInLockPower;
+
+    event CheckInLockPowerUpdated(uint256 _minLockPower);
+
     function initialize(
         address initialOwner,
         uint256 _unlockPeriod,
@@ -80,6 +84,7 @@ contract XradersLock is
         unlockPeriod = _unlockPeriod;
         penaltyRate = _penaltyRate;
         treasuryAddress = _treasuryAddress;
+        checkInLockPower = 500;
     }
 
     function connectToOtherContracts(
@@ -392,17 +397,11 @@ contract XradersLock is
     function getCheckinAmountInBNB(
         uint256 lockedAmount
     ) public view returns (uint256) {
-        //lockpower * 0.001 * 2 계산용
-        // uint256 scale = 1000;
-        //5 계산용
-        uint256 scale = 10;
-        uint256 multiplier = 2;
-        //최소 Lock xr 수량 500 테스트 5
-        uint256 minLockedAmount = 5 * 10 ** 18;
+        uint256 minLockedAmount = checkInLockPower * 10 ** 18;
 
         uint256 userXrLockAmount = minLockedAmount;
 
-        //xr lock power 가 500 보다 커야 함. 테스트 5
+        //xr lock power 가 minLockedAmount 보다 커야 함.
         if (lockedAmount > minLockedAmount) {
             userXrLockAmount = lockedAmount;
         }
@@ -416,8 +415,8 @@ contract XradersLock is
 
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
 
-        uint256 result = (userXrLockAmount * bnbPerXr * multiplier) /
-            (scale * 10 ** 18);
+        uint256 result = (userXrLockAmount * bnbPerXr) /
+            (checkInLockPower * 10 ** 18);
 
         require(result > 0, "Calculation overflow error");
 
@@ -442,5 +441,10 @@ contract XradersLock is
             str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
         }
         return string(str);
+    }
+
+    function setCheckInLockPower(uint256 _checkInLockPower) external onlyOwner {
+        checkInLockPower = _checkInLockPower;
+        emit CheckInLockPowerUpdated(_checkInLockPower);
     }
 }
