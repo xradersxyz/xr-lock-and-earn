@@ -388,7 +388,7 @@ contract XradersLock is
         return userCheckInData[uid].checkedInTime;
     }
 
-    function canCheckIn(uint256 uid) private view returns (bool) {
+    function canCheckIn(uint256 uid) public view returns (bool) {
         uint256 currentDay = getCurrentTime();
         uint256 lastCheckedInDate = userCheckInData[uid].checkedInTime;
         return lastCheckedInDate != currentDay;
