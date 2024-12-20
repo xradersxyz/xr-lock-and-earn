@@ -22,8 +22,8 @@ async function main() {
   // const deadline = Math.floor(Date.now() / 1000) + 60 * 60;
 
   const checkInTx = await xradersLock.checkIn(
-    [deployer.getAddress(), deployer.getAddress()],
-    1234567892,
+    [deployer.getAddress()],
+    138678983976050211n,
     { value: checkinAmountInBnb }
   );
   const receipt = await checkInTx.wait();
