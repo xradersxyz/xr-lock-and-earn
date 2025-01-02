@@ -6139,7 +6139,7 @@
             "label": "token",
             "offset": 0,
             "slot": "0",
-            "type": "t_contract(IERC20)2358",
+            "type": "t_contract(IERC20)1353",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:19"
           },
@@ -6147,7 +6147,7 @@
             "label": "tokenWithPermit",
             "offset": 0,
             "slot": "1",
-            "type": "t_contract(IERC20Permit)2786",
+            "type": "t_contract(IERC20Permit)1461",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:20"
           },
@@ -6179,7 +6179,7 @@
             "label": "userLock",
             "offset": 0,
             "slot": "5",
-            "type": "t_mapping(t_address,t_struct(Lock)11107_storage)",
+            "type": "t_mapping(t_address,t_struct(Lock)1922_storage)",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:31"
           },
@@ -6187,7 +6187,7 @@
             "label": "userUnlocks",
             "offset": 0,
             "slot": "6",
-            "type": "t_mapping(t_address,t_array(t_struct(Lock)11107_storage)dyn_storage)",
+            "type": "t_mapping(t_address,t_array(t_struct(Lock)1922_storage)dyn_storage)",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:32"
           },
@@ -6195,7 +6195,7 @@
             "label": "pancakeRouter",
             "offset": 0,
             "slot": "7",
-            "type": "t_contract(IUniswapV2Router02)9926",
+            "type": "t_contract(IUniswapV2Router02)1887",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:55"
           },
@@ -6211,7 +6211,7 @@
             "label": "userCheckInData",
             "offset": 0,
             "slot": "9",
-            "type": "t_mapping(t_uint256,t_struct(CheckInData)11196_storage)",
+            "type": "t_mapping(t_uint256,t_struct(CheckInData)2011_storage)",
             "contract": "XradersLock",
             "src": "contracts/XradersLock.sol:63"
           },
@@ -6263,7 +6263,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(ReentrancyGuardStorage)243_storage": {
+          "t_struct(ReentrancyGuardStorage)174_storage": {
             "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
             "members": [
               {
@@ -6287,35 +6287,35 @@
             "label": "address[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Lock)11107_storage)dyn_storage": {
+          "t_array(t_struct(Lock)1922_storage)dyn_storage": {
             "label": "struct XradersLock.Lock[]",
             "numberOfBytes": "32"
           },
-          "t_contract(IERC20)2358": {
+          "t_contract(IERC20)1353": {
             "label": "contract IERC20",
             "numberOfBytes": "20"
           },
-          "t_contract(IERC20Permit)2786": {
+          "t_contract(IERC20Permit)1461": {
             "label": "contract IERC20Permit",
             "numberOfBytes": "20"
           },
-          "t_contract(IUniswapV2Router02)9926": {
+          "t_contract(IUniswapV2Router02)1887": {
             "label": "contract IUniswapV2Router02",
             "numberOfBytes": "20"
           },
-          "t_mapping(t_address,t_array(t_struct(Lock)11107_storage)dyn_storage)": {
+          "t_mapping(t_address,t_array(t_struct(Lock)1922_storage)dyn_storage)": {
             "label": "mapping(address => struct XradersLock.Lock[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(Lock)11107_storage)": {
+          "t_mapping(t_address,t_struct(Lock)1922_storage)": {
             "label": "mapping(address => struct XradersLock.Lock)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(CheckInData)11196_storage)": {
+          "t_mapping(t_uint256,t_struct(CheckInData)2011_storage)": {
             "label": "mapping(uint256 => struct XradersLock.CheckInData)",
             "numberOfBytes": "32"
           },
-          "t_struct(CheckInData)11196_storage": {
+          "t_struct(CheckInData)2011_storage": {
             "label": "struct XradersLock.CheckInData",
             "members": [
               {
@@ -6333,7 +6333,7 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Lock)11107_storage": {
+          "t_struct(Lock)1922_storage": {
             "label": "struct XradersLock.Lock",
             "members": [
               {

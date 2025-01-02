@@ -350,6 +350,7 @@ contract XradersLock is
         payCheckinInBNB(checkInBnbAmount);
 
         userCheckInData[uid].checkedInTime = getCurrentTime();
+
         userCheckInData[uid].wallets = wallets;
 
         string memory walletString = "";
