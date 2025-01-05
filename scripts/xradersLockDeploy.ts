@@ -40,7 +40,8 @@ async function main() {
   } else {
     xradersLock = await upgrades.deployProxy(
       XradersLockFactory,
-      [initialOwner, unlockPeriod, penaltyRate, treasuryAddress, pancakeRouterAddress],
+      // [initialOwner, unlockPeriod, penaltyRate, treasuryAddress, pancakeRouterAddress],
+      [initialOwner, unlockPeriod, penaltyRate, treasuryAddress],
       {
         initializer: "initialize",
       }
@@ -53,7 +54,7 @@ async function main() {
   await xradersLock.setPancakeRouter(pancakeRouterAddress);
   console.log(`Pancake router address : ${pancakeRouterAddress}`);
 
-  const setTokenTx = await xradersLock.connectToOtherContracts([tokenAddress]);
+  const setTokenTx = await xradersLock.connectToOtherContracts([tokenAddress],{ gasLimit: 500000 });
   await setTokenTx.wait();
   console.log(`Token contract ${tokenAddress} connected to XradersLock`);
 

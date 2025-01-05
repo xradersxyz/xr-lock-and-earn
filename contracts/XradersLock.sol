@@ -8,8 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
-contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
+contract XradersLock is
+    IConnectToken,
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     IERC20 public token;
     IERC20Permit public tokenWithPermit;
 
@@ -33,14 +39,40 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     event Locked(address indexed user, uint256 amount);
     event Unlocked(address indexed user, uint256 amount);
     event Redeemed(address indexed user, uint256 amount);
-    event FastRedeemed(address indexed user, uint256 amount, uint256 penaltyAmount);
-    event FastRedeemedInBNB(address indexed user, uint256 amount, uint256 penaltyAmount);
+    event FastRedeemed(
+        address indexed user,
+        uint256 amount,
+        uint256 penaltyAmount
+    );
+    event FastRedeemedInBNB(
+        address indexed user,
+        uint256 amount,
+        uint256 penaltyAmount
+    );
     event PenaltyPaidInBNB(address indexed user, uint256 amountInBNB);
     event PenaltyPaidInXR(address indexed user, uint256 amountInXR);
 
     IUniswapV2Router02 public pancakeRouter;
     address[] public path;
-    
+
+    struct CheckInData {
+        address[] wallets;
+        uint256 checkedInTime;
+    }
+
+    mapping(uint256 => CheckInData) private userCheckInData;
+    event CheckIn(
+        address indexed user,
+        uint256 uid,
+        uint256 amountInBNB,
+        uint256 walletLength,
+        string wallets
+    );
+    event PayCheckinInBNB(address indexed user, uint256 amountInBNB);
+
+    uint256 public checkInLockPower;
+
+    event CheckInLockPowerUpdated(uint256 _minLockPower);
 
     function initialize(
         address initialOwner,
@@ -52,9 +84,12 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         unlockPeriod = _unlockPeriod;
         penaltyRate = _penaltyRate;
         treasuryAddress = _treasuryAddress;
+        checkInLockPower = 500;
     }
 
-    function connectToOtherContracts(address[] memory otherContracts) external override onlyOwner {
+    function connectToOtherContracts(
+        address[] memory otherContracts
+    ) external override onlyOwner {
         require(otherContracts[0] != address(0), "Invalid token address");
         token = IERC20(otherContracts[0]);
         tokenWithPermit = IERC20Permit(otherContracts[0]);
@@ -102,7 +137,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         bytes32 s
     ) external {
         require(amount > 0, "Amount must be greater than 0");
-        require(amount % (10**18) == 0, "Amount must be a whole number of tokens");
+        require(
+            amount % (10 ** 18) == 0,
+            "Amount must be a whole number of tokens"
+        );
 
         tokenWithPermit.permit(
             msg.sender,
@@ -123,7 +161,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
     function unlock(uint256 amount) external {
         Lock storage lockData = userLock[msg.sender];
-        require(amount > 0 && amount <= lockData.amount, "Invalid unlock amount");
+        require(
+            amount > 0 && amount <= lockData.amount,
+            "Invalid unlock amount"
+        );
 
         lockData.amount -= amount;
         userUnlocks[msg.sender].push(
@@ -161,7 +202,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
         Lock[] storage unlocks = userUnlocks[msg.sender];
         require(unlocks[index].amount > 0, "No unlock request found");
-        require(block.timestamp < unlocks[index].timestamp, "Use redeem function after unlock period");
+        require(
+            block.timestamp < unlocks[index].timestamp,
+            "Use redeem function after unlock period"
+        );
 
         uint256 amount = (unlocks[index].amount * (100 - penaltyRate)) / 100;
         uint256 penaltyAmount = unlocks[index].amount - amount;
@@ -180,13 +224,19 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
 
         Lock[] storage unlocks = userUnlocks[msg.sender];
         require(unlocks[index].amount > 0, "No unlock request found");
-        require(block.timestamp < unlocks[index].timestamp, "Use redeem function after unlock period");
+        require(
+            block.timestamp < unlocks[index].timestamp,
+            "Use redeem function after unlock period"
+        );
 
         uint256 penaltyAmount = getPenaltyAmountInBNB(index);
         payPenaltyInBNB(penaltyAmount);
-        
+
         uint256 redeemAmount = unlocks[index].amount;
-        require(token.transfer(msg.sender, redeemAmount), "Token transfer failed");
+        require(
+            token.transfer(msg.sender, redeemAmount),
+            "Token transfer failed"
+        );
 
         unlocks[index] = unlocks[unlocks.length - 1];
         unlocks.pop();
@@ -194,40 +244,52 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         emit FastRedeemedInBNB(msg.sender, redeemAmount, penaltyAmount);
     }
 
-    function getPenaltyAmountInBNB(uint256 index) public view returns (uint256) {
+    function getPenaltyAmountInBNB(
+        uint256 index
+    ) public view returns (uint256) {
         require(index < userUnlocks[msg.sender].length, "Invalid unlock index");
         Lock[] storage unlocks = userUnlocks[msg.sender];
         uint256 amount = unlocks[index].amount;
 
-        uint256 currentPenaltyRate = getCurrentPenaltyRate(unlocks[index].timestamp);
+        uint256 currentPenaltyRate = getCurrentPenaltyRate(
+            unlocks[index].timestamp
+        );
         uint256 penaltyXR = (amount * currentPenaltyRate) / 100;
 
-        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(10**18, path);
+        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(
+            10 ** 18,
+            path
+        );
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
-        
-        return (bnbPerXr * penaltyXR) / (10**18);
+
+        return (bnbPerXr * penaltyXR) / (10 ** 18);
     }
 
-    function getCurrentPenaltyRate(uint256 unlockTimestamp) public view returns (uint256) {
+    function getCurrentPenaltyRate(
+        uint256 unlockTimestamp
+    ) public view returns (uint256) {
         if (block.timestamp >= unlockTimestamp) {
             return 0;
         }
 
-        uint256 timeElapsed = block.timestamp - (unlockTimestamp - unlockPeriod);
+        uint256 timeElapsed = block.timestamp -
+            (unlockTimestamp - unlockPeriod);
         uint256 timePercentElapsed = (timeElapsed * 100) / unlockPeriod;
-        uint256 reducedPenaltyRate = penaltyRate * timePercentElapsed / 100;
+        uint256 reducedPenaltyRate = (penaltyRate * timePercentElapsed) / 100;
 
         return penaltyRate - reducedPenaltyRate;
     }
 
     function payPenaltyInBNB(uint256 penaltyAmount) internal {
         require(msg.value >= penaltyAmount, "Insufficient BNB sent");
-        
+
         if (msg.value > penaltyAmount) {
-            (bool refundSuccess, ) = msg.sender.call{value: msg.value - penaltyAmount}("");
+            (bool refundSuccess, ) = msg.sender.call{
+                value: msg.value - penaltyAmount
+            }("");
             require(refundSuccess, "Refund failed");
         }
-        
+
         (bool success, ) = treasuryAddress.call{value: penaltyAmount}("");
         require(success, "BNB transfer failed");
 
@@ -235,7 +297,10 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
     }
 
     function payPenaltyInXR(uint256 penaltyAmount) internal {
-        require(token.transfer(treasuryAddress, penaltyAmount), "Penalty transfer failed");
+        require(
+            token.transfer(treasuryAddress, penaltyAmount),
+            "Penalty transfer failed"
+        );
         emit PenaltyPaidInXR(msg.sender, penaltyAmount);
     }
 
@@ -256,11 +321,131 @@ contract XradersLock is IConnectToken, Initializable, OwnableUpgradeable {
         return amount;
     }
 
-    function getUserUnlocks(address user) external view returns (Lock[] memory) {
+    function getUserUnlocks(
+        address user
+    ) external view returns (Lock[] memory) {
         return userUnlocks[user];
     }
 
     function getPath() public view returns (address[] memory) {
         return path;
+    }
+
+    function checkIn(address[] memory wallets, uint256 uid) external payable {
+        require(canCheckIn(uid), "Already checked in today");
+
+        uint256 totalLockAmount = 0;
+
+        for (uint256 i = 0; i < wallets.length; i++) {
+            address wallet = wallets[i];
+            if (wallet != address(0)) {
+                totalLockAmount += userLock[wallet].amount;
+            }
+        }
+
+        uint256 checkInBnbAmount = getCheckinAmountInBNB(totalLockAmount);
+
+        require(checkInBnbAmount > 0, "Lock power check error");
+
+        payCheckinInBNB(checkInBnbAmount);
+
+        userCheckInData[uid].checkedInTime = getCurrentTime();
+
+        userCheckInData[uid].wallets = wallets;
+
+        string memory walletString = "";
+        for (uint256 i = 0; i < wallets.length; i++) {
+            walletString = string(
+                abi.encodePacked(walletString, addressToString(wallets[i]), " ")
+            );
+        }
+
+        emit CheckIn(
+            msg.sender,
+            uid,
+            checkInBnbAmount,
+            wallets.length,
+            walletString
+        );
+    }
+
+    function payCheckinInBNB(uint256 checkInAmount) internal nonReentrant {
+        require(msg.value >= checkInAmount, "Insufficient BNB sent");
+
+        if (msg.value > checkInAmount) {
+            (bool refundSuccess, ) = msg.sender.call{
+                value: msg.value - checkInAmount
+            }("");
+            require(refundSuccess, "Refund failed");
+        }
+
+        (bool success, ) = treasuryAddress.call{value: checkInAmount}("");
+        require(success, "BNB transfer failed");
+
+        emit PayCheckinInBNB(msg.sender, checkInAmount);
+    }
+
+    function getLastCheckInTime(uint256 uid) public view returns (uint256) {
+        return userCheckInData[uid].checkedInTime;
+    }
+
+    function canCheckIn(uint256 uid) public view returns (bool) {
+        uint256 currentDay = getCurrentTime();
+        uint256 lastCheckedInDate = userCheckInData[uid].checkedInTime;
+        return lastCheckedInDate != currentDay;
+    }
+
+    function getCheckinAmountInBNB(
+        uint256 lockedAmount
+    ) public view returns (uint256) {
+        uint256 minLockedAmount = checkInLockPower * 10 ** 18;
+
+        uint256 userXrLockAmount = minLockedAmount;
+
+        //xr lock power 가 minLockedAmount 보다 커야 함.
+        if (lockedAmount > minLockedAmount) {
+            userXrLockAmount = lockedAmount;
+        }
+
+        uint256[] memory amountsOut = pancakeRouter.getAmountsOut(
+            10 ** 18,
+            path
+        );
+
+        require(amountsOut.length > 0, "Pancake Router Swap fail!");
+
+        uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
+
+        uint256 result = (userXrLockAmount * bnbPerXr) /
+            (checkInLockPower * 10 ** 18);
+
+        require(result > 0, "Calculation overflow error");
+
+        return result;
+    }
+
+    function getCurrentTime() private view returns (uint256) {
+        // 1 day = 86400 seconds
+        return block.timestamp / 86400;
+    }
+
+    function addressToString(
+        address _addr
+    ) private pure returns (string memory) {
+        bytes32 value = bytes32(uint256(uint160(_addr)));
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(42);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint256 i = 0; i < 20; i++) {
+            str[2 + i * 2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
+    }
+
+    function setCheckInLockPower(uint256 _checkInLockPower) external onlyOwner {
+        checkInLockPower = _checkInLockPower;
+        emit CheckInLockPowerUpdated(_checkInLockPower);
     }
 }
