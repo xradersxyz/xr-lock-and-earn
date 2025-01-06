@@ -280,7 +280,7 @@ contract XradersLock is
         return penaltyRate - reducedPenaltyRate;
     }
 
-    function payPenaltyInBNB(uint256 penaltyAmount) internal {
+    function payPenaltyInBNB(uint256 penaltyAmount) internal nonReentrant {
         require(msg.value >= penaltyAmount, "Insufficient BNB sent");
 
         if (msg.value > penaltyAmount) {
