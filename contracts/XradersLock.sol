@@ -88,8 +88,8 @@ contract XradersLock is
         unlockPeriod = _unlockPeriod;
         penaltyRate = _penaltyRate;
         treasuryAddress = _treasuryAddress;
-        checkInLockPower = 300;
-        checkInCostMultiplier = 4;
+        checkInLockPower = 500;
+        checkInCostMultiplier = 2;
     }
 
     function connectToOtherContracts(
