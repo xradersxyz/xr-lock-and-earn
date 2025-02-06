@@ -74,6 +74,10 @@ contract XradersLock is
 
     event CheckInLockPowerUpdated(uint256 _minLockPower);
 
+    uint256 public checkInCostMultiplier;
+
+    event CheckInInCostMultiplierUpdated(uint256 _checkInCostMultiplier);
+
     function initialize(
         address initialOwner,
         uint256 _unlockPeriod,
@@ -85,6 +89,7 @@ contract XradersLock is
         penaltyRate = _penaltyRate;
         treasuryAddress = _treasuryAddress;
         checkInLockPower = 500;
+        checkInCostMultiplier = 2;
     }
 
     function connectToOtherContracts(
@@ -416,8 +421,11 @@ contract XradersLock is
 
         uint256 bnbPerXr = amountsOut[amountsOut.length - 1];
 
-        uint256 result = (userXrLockAmount * bnbPerXr) /
-            (checkInLockPower * 10 ** 18);
+        uint256 result = (userXrLockAmount * checkInCostMultiplier * bnbPerXr) /
+            (10 ** 18 * 1000);
+
+        // uint256 result = (userXrLockAmount * bnbPerXr) /
+        //     (checkInLockPower * 10 ** 18);
 
         require(result > 0, "Calculation overflow error");
 
@@ -447,5 +455,12 @@ contract XradersLock is
     function setCheckInLockPower(uint256 _checkInLockPower) external onlyOwner {
         checkInLockPower = _checkInLockPower;
         emit CheckInLockPowerUpdated(_checkInLockPower);
+    }
+
+    function setCheckInCostMultiplier(
+        uint256 _checkInCostMultiplier
+    ) external onlyOwner {
+        checkInCostMultiplier = _checkInCostMultiplier;
+        emit CheckInInCostMultiplierUpdated(_checkInCostMultiplier);
     }
 }
