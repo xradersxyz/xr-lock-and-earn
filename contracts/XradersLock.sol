@@ -78,6 +78,11 @@ contract XradersLock is
 
     event CheckInInCostMultiplierUpdated(uint256 _checkInCostMultiplier);
 
+    bool public active;
+
+    event ActiveUpdated(bool active);
+    event EmergencyWithdraw(address indexed to, uint256 amount);
+
     function initialize(
         address initialOwner,
         uint256 _unlockPeriod,
@@ -141,6 +146,7 @@ contract XradersLock is
         bytes32 r,
         bytes32 s
     ) external {
+        require(active, "Service is no longer active");
         require(amount > 0, "Amount must be greater than 0");
         require(
             amount % (10 ** 18) == 0,
@@ -165,6 +171,7 @@ contract XradersLock is
     }
 
     function unlock(uint256 amount) external {
+        require(active, "Service is no longer active");
         Lock storage lockData = userLock[msg.sender];
         require(
             amount > 0 && amount <= lockData.amount,
@@ -180,6 +187,7 @@ contract XradersLock is
     }
 
     function redeem() external {
+        require(active, "Service is no longer active");
         Lock[] storage unlocks = userUnlocks[msg.sender];
         require(unlocks.length > 0, "No unlock found");
 
@@ -203,6 +211,7 @@ contract XradersLock is
     }
 
     function fastRedeem(uint256 index) external {
+        require(active, "Service is no longer active");
         require(index < userUnlocks[msg.sender].length, "Invalid unlock index");
 
         Lock[] storage unlocks = userUnlocks[msg.sender];
@@ -225,6 +234,7 @@ contract XradersLock is
     }
 
     function fastRedeemInBNB(uint256 index) external payable {
+        require(active, "Service is no longer active");
         require(index < userUnlocks[msg.sender].length, "Invalid unlock index");
 
         Lock[] storage unlocks = userUnlocks[msg.sender];
@@ -337,6 +347,7 @@ contract XradersLock is
     }
 
     function checkIn(address[] memory wallets, uint256 uid) external payable {
+        require(active, "Service is no longer active");
         require(canCheckIn(uid), "Already checked in today");
 
         uint256 totalLockAmount = 0;
@@ -450,6 +461,19 @@ contract XradersLock is
             str[3 + i * 2] = alphabet[uint8(value[i + 12] & 0x0f)];
         }
         return string(str);
+    }
+
+    function setActive(bool _active) external onlyOwner {
+        active = _active;
+        emit ActiveUpdated(_active);
+    }
+
+    function emergencyWithdraw(address to) external onlyOwner {
+        require(to != address(0), "Invalid address");
+        uint256 balance = token.balanceOf(address(this));
+        require(balance > 0, "No balance to withdraw");
+        require(token.transfer(to, balance), "Transfer failed");
+        emit EmergencyWithdraw(to, balance);
     }
 
     function setCheckInLockPower(uint256 _checkInLockPower) external onlyOwner {

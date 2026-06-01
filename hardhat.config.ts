@@ -7,7 +7,7 @@ import "@openzeppelin/hardhat-upgrades";
 const envFile = process.env.NODE_ENV === "mainnet" ? ".env-main" : ".env-test";
 dotenv.config({ path: envFile });
 
-const { PRIVATE_KEY, BSCSCAN_API_URL, BSCSCAN_API_KEY, NODEREAL_RPC_URL, NODEREAL_API_KEY } = process.env;
+const { PRIVATE_KEY, BSCSCAN_API_URL, BSCSCAN_API_KEY, ETHERSCAN_API_KEY, NODEREAL_RPC_URL, NODEREAL_API_KEY } = process.env;
 
 
 const config: HardhatUserConfig = {
@@ -40,11 +40,19 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      mainnet: BSCSCAN_API_KEY as string,
+      mainnet: ETHERSCAN_API_KEY as string,
       testnet: BSCSCAN_API_KEY as string,
       bsc: BSCSCAN_API_KEY as string,
     },
     customChains: [
+      {
+        network: "mainnet",
+        chainId: 56,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=56",
+          browserURL: process.env.BSCSCAN_BROWSER_URL as any,
+        },
+      },
       {
         network: "testnet",
         chainId: 97,
